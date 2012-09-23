@@ -4,6 +4,7 @@ var http = require('http');
 var util = require('util');
 var events = require('events');
 var JsonParser = require('jsonparse');
+var extend = require('extend');
 
 var UNAUTHORIZED = "Unauthorized\n";
 var METHOD_NOT_ALLOWED = "Method Not Allowed\n";
@@ -94,7 +95,7 @@ Endpoint.prototype.exposeModule = Endpoint.prototype.expose;
 /**
  * JSON-RPC Client.
  */
-var Client = function (port, host, user, password)
+var Client = function (port, host, user, password, default_http_opts)
 {
   Endpoint.call(this);
 
@@ -102,6 +103,7 @@ var Client = function (port, host, user, password)
   this.host = host;
   this.user = user;
   this.password = password;
+  this.default_opts = default_http_opts
 };
 
 util.inherits(Client, Endpoint);
@@ -120,6 +122,9 @@ Client.prototype.connectHttp = function connectHttp(method, params, opts, callba
     opts = {};
   }
   opts = opts || {};
+
+  // Merge de the default options so we can support a json-rpc path
+  opts = extend(opts, this.default_opts);
 
   var client = http.createClient(this.port, this.host);
 
@@ -279,6 +284,7 @@ Client.prototype.call = function (method, params, opts, callback)
         callback(new Error(""+response.statusCode+" "+data));
         return;
       }
+	
       var decoded = JSON.parse(data);
       if ("function" === typeof callback) {
         if (!decoded.error) {
