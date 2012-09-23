@@ -130,13 +130,19 @@ Client.prototype.connectHttp = function connectHttp(method, params, opts, callba
 
   var id = 1;
 
-  // First we encode the request into JSON
-  var requestJSON = JSON.stringify({
-    'id': id,
+  // Some JSON-RPC don't support empty params
+  req = {
+    'jsonrpc': '2.0',
     'method': method,
-    'params': params,
-    'jsonrpc': '2.0'
-  });
+    'id': id
+  }
+  // See previous comment, only add params if we have some
+  if(params){
+    req.params = params;
+  }
+
+  // First we encode the request into JSON
+  var requestJSON = JSON.stringify(req);
 
   // Report errors from the http client. This also prevents crashes since
   // an exception is thrown if we don't handle this event.
@@ -284,8 +290,9 @@ Client.prototype.call = function (method, params, opts, callback)
         callback(new Error(""+response.statusCode+" "+data));
         return;
       }
-	
+
       var decoded = JSON.parse(data);
+
       if ("function" === typeof callback) {
         if (!decoded.error) {
           decoded.error = null;
